@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card p-4 shadow">
+  <h2 class="mb-3">2D Perceptron Classifier</h2>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.points.label(class="form-label") }}
+      {{ form.points(class="form-control", rows="6") }}
+    </div>
+    <div class="form-group mt-3">
+      {{ form.submit(class="btn btn-primary") }}
+    </div>
+  </form>
+
+  {% if plot_url %}
+  <hr>
+  <h4>Classification Result</h4>
+  <img src="{{ plot_url }}" class="img-fluid mt-2">
+  {% endif %}
+</div>
+{% endblock %}
