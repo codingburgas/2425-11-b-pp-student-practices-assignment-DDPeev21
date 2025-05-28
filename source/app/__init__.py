@@ -1,27 +1,28 @@
 from flask import Flask
-from .extensions import db, login_manager, bootstrap, csrf, migrate, mail
-from .blueprints.auth.routes import auth_bp
-from .blueprints.classifier.routes import classifier_bp
-from .blueprints.dashboard.routes import dashboard_bp
-from app.blueprints.classifier.routes import classifier_bp
-app.register_blueprint(classifier_bp)
+from flask_login import LoginManager
+from .models import db, User
+from config import Config
+
+login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object('app.config.Config')
-
+    app.config.from_object(Config)
 
     db.init_app(app)
     login_manager.init_app(app)
-    bootstrap.init_app(app)
-    csrf.init_app(app)
-    migrate.init_app(app, db)
-    mail.init_app(app)
 
+    from .auth import auth as auth_blueprint
+    from .main import main as main_blueprint
+    app.register_blueprint(auth_blueprint)
+    app.register_blueprint(main_blueprint)
 
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(classifier_bp)
-    app.register_blueprint(dashboard_bp)
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    with app.app_context():
+        db.create_all()
 
     return app
