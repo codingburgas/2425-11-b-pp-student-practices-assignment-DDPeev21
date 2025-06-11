@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 
 class Perceptron:
     def __init__(self, learning_rate=0.01, epochs=100):
@@ -24,3 +25,8 @@ class Perceptron:
     def predict(self, X):
         linear_output = np.dot(X, self.weights) + self.bias
         return 1 if linear_output >= 0 else 0
+
+def predict_point(point):
+    with open("perceptron_model.pkl", "rb") as f:
+        model = pickle.load(f)
+    return model.predict(np.array(point))

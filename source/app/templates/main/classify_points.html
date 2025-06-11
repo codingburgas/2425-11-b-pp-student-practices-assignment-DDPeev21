@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>Classify a Point</h2>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <p>{{ form.x.label }} {{ form.x() }}</p>
+    <p>{{ form.y.label }} {{ form.y() }}</p>
+    <p>{{ form.submit() }}</p>
+  </form>
+
+  {% if prediction %}
+    <p><strong>Prediction:</strong> {{ prediction }}</p>
+  {% endif %}
+{% endblock %}

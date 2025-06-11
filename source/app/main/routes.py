@@ -4,11 +4,24 @@ from app import db
 from app.models import DataPoint
 from ..utils.perceptron import Perceptron
 from app.auth.forms import AddDataForm
-from app.auth.forms import PointForm, AddDataForm
+from app.auth.forms import ClassifyPointForm, AddDataForm
 import numpy as np
+from app.utils.perceptron import predict_point
+
 
 bp = Blueprint('main', __name__, template_folder='../../templates')
 
+
+
+@bp.route('/classify', methods=['GET', 'POST'])
+def classify_point():
+    form = ClassifyPointForm()
+    prediction = None
+    if form.validate_on_submit():
+        x = form.x.data
+        y = form.y.data
+        pass
+    return render_template('main/classify_points.html', form=form, prediction=prediction)
 
 X_train = np.array([[1, 1], [2, 2], [3, 3], [1, 0]])
 y_train = np.array([1, 1, 1, 0])
@@ -46,7 +59,7 @@ def survey():
 @bp.route('/predict', methods=['GET', 'POST'])
 @login_required
 def predict():
-    form = PointForm()
+    form = ClassifyPointForm()
     prediction = None
 
     points = current_user.points.all()

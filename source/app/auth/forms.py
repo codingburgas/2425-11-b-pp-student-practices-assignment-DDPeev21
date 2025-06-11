@@ -3,7 +3,7 @@ from wtforms import StringField, PasswordField, SubmitField, FloatField, Integer
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from wtforms import FloatField, SubmitField
 
-class PointForm(FlaskForm):
+class ClassifyPointForm(FlaskForm):
     x = FloatField('X Coordinate', validators=[DataRequired()])
     y = FloatField('Y Coordinate', validators=[DataRequired()])
     submit = SubmitField('Classify')
