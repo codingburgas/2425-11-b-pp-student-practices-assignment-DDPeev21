@@ -4,7 +4,8 @@
 <h1>Welcome to the Perceptron Classifier</h1>
 <p>Navigate to:</p>
 <ul>
-    <li><a href="{{ url_for('main.survey') }}">Add Data Points</a></li>
     <li><a href="{{ url_for('main.predict') }}">Classify Points</a></li>
+    <li><a href="{{ url_for('auth.survey') }}">Survey</a></li>
+    <li><a href="{{ url_for('main.add_data') }}" class="btn btn-primary">Add Data Points</a></li>
 </ul>
 {% endblock %}

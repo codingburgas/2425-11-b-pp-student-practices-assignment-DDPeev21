@@ -5,6 +5,8 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_mail import Mail
 from flask_bootstrap import Bootstrap
+from flask_wtf.csrf import CSRFProtect
+
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -30,7 +32,7 @@ def create_app(config_class=Config):
         from app.models import User
         return User.query.get(int(user_id))
 
-    # Correct blueprint imports
+
     from app.auth.routes import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 

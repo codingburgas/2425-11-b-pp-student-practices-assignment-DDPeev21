@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class Perceptron:
     def __init__(self, learning_rate=0.01, epochs=100):
         self.weights = None

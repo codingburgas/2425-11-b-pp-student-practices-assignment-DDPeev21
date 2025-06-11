@@ -1,21 +1,19 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block content %}
-  <h1>Add Data Points</h1>
-  <form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="form-group">
-      <label>X Coordinate</label>
-      <input type="number" step="any" name="x" required class="form-control">
-    </div>
-    <div class="form-group">
-      <label>Y Coordinate</label>
-      <input type="number" step="any" name="y" required class="form-control">
-    </div>
-    <div class="form-group">
-      <label>Label (0 or 1)</label>
-      <input type="number" name="label" min="0" max="1" required class="form-control">
-    </div>
-    <button type="submit" class="btn btn-primary">Submit Point</button>
-  </form>
+  <div class="container mt-5">
+    <h2>Survey</h2>
+    <form method="POST" action="{{ url_for('auth.survey') }}">
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.feedback.label(class="form-label") }}
+        {{ form.feedback(class="form-control", placeholder="Enter your feedback here...") }}
+      </div>
+
+      <div class="form-group mt-3">
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
 {% endblock %}
