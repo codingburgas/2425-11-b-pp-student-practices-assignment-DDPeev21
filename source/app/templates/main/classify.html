@@ -1,0 +1,43 @@
+{% extends 'bootstrap/base.html' %}
+{% block title %}Classify Point{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">Classify a 2D Point</div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        <div class="form-group mb-3">
+                            {{ form.x.label(class="form-label") }}
+                            {{ form.x(class="form-control") }}
+                        </div>
+                        <div class="form-group mb-3">
+                            {{ form.y.label(class="form-label") }}
+                            {{ form.y(class="form-control") }}
+                        </div>
+                        <div class="form-group mb-3">
+                            {{ form.label.label(class="form-label") }}
+                            {{ form.label(class="form-select") }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.submit(class="btn btn-primary w-100") }}
+                        </div>
+                    </form>
+                    {% if result is not none %}
+                        <div class="alert alert-success mt-3">
+                            Classification result: <strong>{{ result }}</strong>
+                        </div>
+                    {% endif %}
+                    {% if img_data %}
+                        <div class="text-center mt-4">
+                            <img src="{{ img_data }}" alt="Classification Visualization" class="img-fluid rounded shadow" style="max-width: 100%; border-radius: 1.5rem;"/>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

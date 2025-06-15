@@ -1,42 +1,36 @@
 from flask import Flask
-from config import Config
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_login import LoginManager
 from flask_mail import Mail
-from flask_bootstrap import Bootstrap
-from flask_wtf.csrf import CSRFProtect
+from config import Config
 
-
+# Extension instances
 db = SQLAlchemy()
-login_manager = LoginManager()
 migrate = Migrate()
+login_manager = LoginManager()
 mail = Mail()
-bootstrap = Bootstrap()
-
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Initialize extensions
     db.init_app(app)
-    login_manager.init_app(app)
     migrate.init_app(app, db)
+    login_manager.init_app(app)
     mail.init_app(app)
-    bootstrap.init_app(app)
 
-    login_manager.login_view = 'auth.login'
+    # Import blueprints after extensions are initialized
+    from app.auth import auth as auth_blueprint
+    from app.main import main as main_blueprint
+    from app.user import user as user_blueprint
+    from app.errors import errors as errors_blueprint
 
-    @login_manager.user_loader
-    def load_user(user_id):
-        from app.models import User
-        return User.query.get(int(user_id))
+    # Register blueprints
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
+    app.register_blueprint(main_blueprint)
+    app.register_blueprint(user_blueprint, url_prefix='/user')
+    app.register_blueprint(errors_blueprint)
 
-
-    from app.auth.routes import bp as auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-
-    from app.main.routes import bp as main_bp
-    app.register_blueprint(main_bp)
-
-    return app
+    return app 

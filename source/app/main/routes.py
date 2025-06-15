@@ -1,95 +1,84 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+# Main blueprint routes will go here 
+from flask import render_template, send_file
 from flask_login import login_required, current_user
-from app import db
-from app.models import DataPoint
-from ..utils.perceptron import Perceptron
-from app.auth.forms import AddDataForm
-from app.auth.forms import ClassifyPointForm, AddDataForm
+from flask import Blueprint, redirect, url_for
+from app.forms import PointForm
+from app.ai.perceptron import Perceptron
+from app.models import ClassifiedPoint, db, User
+from flask import request, flash, abort
 import numpy as np
-from app.utils.perceptron import predict_point
+import io
+import matplotlib.pyplot as plt
+import base64
 
+main = Blueprint('main', __name__)
 
-bp = Blueprint('main', __name__, template_folder='../../templates')
+@main.route('/')
+def index():
+    if current_user.is_authenticated:
+        return render_template('main/index.html')
+    return redirect(url_for('auth.login'))
 
-
-
-@bp.route('/classify', methods=['GET', 'POST'])
-def classify_point():
-    form = ClassifyPointForm()
-    prediction = None
+@main.route('/classify', methods=['GET', 'POST'])
+@login_required
+def classify():
+    form = PointForm()
+    result = None
+    img_data = None
     if form.validate_on_submit():
         x = form.x.data
         y = form.y.data
-        pass
-    return render_template('main/classify_points.html', form=form, prediction=prediction)
-
-X_train = np.array([[1, 1], [2, 2], [3, 3], [1, 0]])
-y_train = np.array([1, 1, 1, 0])
-model = Perceptron()
-model.fit(X_train, y_train)
-
-@bp.route('/')
-@login_required
-def home():
-    return render_template('main/home.html')
-
-@bp.route('/survey', methods=['GET', 'POST'])
-@login_required
-def survey():
-    if request.method == 'POST':
-        try:
-            x = float(request.form['x'])
-            y = float(request.form['y'])
-            label = int(request.form['label'])
-
-            if label not in [0, 1]:
-                flash('Label must be 0 or 1', 'danger')
-                return redirect(url_for('main.survey'))
-
-            point = DataPoint(x=x, y=y, label=label, user=current_user)
-            db.session.add(point)
-            db.session.commit()
-            flash('Data point added successfully!', 'success')
-            return redirect(url_for('main.survey'))
-        except (ValueError, KeyError):
-            flash('Invalid input. Please enter numeric values.', 'danger')
-
-    return render_template('main/survey.html')
-
-@bp.route('/predict', methods=['GET', 'POST'])
-@login_required
-def predict():
-    form = ClassifyPointForm()
-    prediction = None
-
-    points = current_user.points.all()
-    if len(points) >= 2:
-        X = np.array([[p.x, p.y] for p in points])
-        y = np.array([p.label for p in points])
-        model = Perceptron()
-        model.fit(X, y)
-
-        if form.validate_on_submit():
-            x = form.x.data
-            y = form.y.data
-            prediction = model.predict(np.array([x, y]))
-    else:
-        flash('You need at least 2 data points to train the model', 'warning')
-        return redirect(url_for('main.survey'))
-
-    return render_template('main/predict.html', form=form, prediction=prediction)
-
-@bp.route('/add-data', methods=['GET', 'POST'])
-@login_required
-def add_data():
-    form = AddDataForm()
-    if form.validate_on_submit():
-        x = form.x.data
-        y = form.y.data
-        label = form.label.data
-        point = DataPoint(x=x, y=y, label=label, user=current_user)
+        label = int(form.label.data)
+        # Add the new point with the true label
+        point = ClassifiedPoint(user_id=current_user.id, x=x, y=y, label=label, result=-1)
         db.session.add(point)
         db.session.commit()
-        flash('Data point added!', 'success')
-        return redirect(url_for('main.home'))
-    return render_template('main/add_data.html', form=form)
+
+    # Fetch all classified points for the current user
+    user_points = ClassifiedPoint.query.filter_by(user_id=current_user.id).all()
+    if user_points:
+        X_train = np.array([[p.x, p.y] for p in user_points])
+        y_train = np.array([p.label for p in user_points])
+        perceptron = Perceptron()
+        perceptron.fit(X_train, y_train)
+        # Predict the class for the last input (if any)
+        if form.validate_on_submit():
+            result = perceptron.predict(np.array([x, y]))
+            # Update the result for the last point
+            point.result = result
+            db.session.commit()
+        xs = [p.x for p in user_points]
+        ys = [p.y for p in user_points]
+        results = [p.result for p in user_points]
+        plt.figure(figsize=(5,5))
+        scatter = plt.scatter(xs, ys, c=results, cmap='coolwarm', s=120, edgecolor='black', label='Your Points')
+        x_vals = np.linspace(min(xs + [0])-0.2, max(xs + [1])+0.2, 100)
+        plt.plot(x_vals, x_vals, 'k--', label='Decision Boundary (y=x)')
+        plt.xlim(min(xs + [0])-0.2, max(xs + [1])+0.2)
+        plt.ylim(min(ys + [0])-0.2, max(ys + [1])+0.2)
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title('Your Classified Points')
+        plt.legend()
+        plt.tight_layout()
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        img_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('utf-8')
+        plt.close()
+    return render_template('main/classify.html', form=form, result=result, img_data=img_data)
+
+@main.route('/history')
+@login_required
+def history():
+    points = ClassifiedPoint.query.filter_by(user_id=current_user.id).order_by(ClassifiedPoint.timestamp.desc()).all()
+    return render_template('main/history.html', points=points)
+
+@main.route('/admin')
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin():
+        abort(403)
+    users = User.query.all()
+    points = ClassifiedPoint.query.order_by(ClassifiedPoint.timestamp.desc()).all()
+    return render_template('main/admin.html', users=users, points=points) 

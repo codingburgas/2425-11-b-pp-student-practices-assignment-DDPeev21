@@ -1,5 +1,2 @@
-from flask import Blueprint
-
-auth = Blueprint('auth', __name__, template_folder='templates')
-
-from . import routes
+# Auth blueprint init 
+from .routes import auth 

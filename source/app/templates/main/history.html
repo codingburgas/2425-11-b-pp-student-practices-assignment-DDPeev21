@@ -1,0 +1,42 @@
+{% extends 'bootstrap/base.html' %}
+{% block title %}Classification History{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">Your Classification History</div>
+                <div class="card-body">
+                    {# <a href="{{ url_for('main.visualize') }}" target="_blank" class="btn btn-outline-primary mb-3">View Visualization</a> #}
+                    {% if points %}
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>X</th>
+                                <th>Y</th>
+                                <th>Result</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for point in points %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ point.x }}</td>
+                                <td>{{ point.y }}</td>
+                                <td>{{ point.result }}</td>
+                                <td>{{ point.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                        <div class="alert alert-info">No classification history yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Simple Classifier{% endblock %}</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green-dark: #7AC47F;
+            --green-medium: #A3D89C;
+            --green-light: #C7E6B0;
+            --green-pale: #E6F5B1;
+            --green-very-pale: #F9F9B5;
+        }
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--green-pale) 0%, var(--green-light) 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(90deg, var(--green-dark) 0%, var(--green-medium) 100%);
+            box-shadow: 0 4px 12px rgba(122, 196, 127, 0.10);
+            border-radius: 0 0 2rem 2rem;
+        }
+        .navbar-brand {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2rem;
+            letter-spacing: 2px;
+            color: #fff !important;
+        }
+        .nav-link, .navbar-brand {
+            color: #fff !important;
+            border-radius: 2rem;
+            transition: color 0.2s, background 0.3s, box-shadow 0.3s, transform 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: var(--green-light);
+            color: var(--green-dark) !important;
+            box-shadow: 0 2px 12px var(--green-pale);
+            transform: scale(1.08) rotate(-2deg);
+        }
+        .card {
+            border-radius: 2rem;
+            box-shadow: 0 6px 24px rgba(122, 196, 127, 0.10);
+            margin-top: 2rem;
+            background: var(--green-very-pale);
+            border: none;
+        }
+        .card-header {
+            border-radius: 2rem 2rem 0 0 !important;
+            background: var(--green-medium) !important;
+            color: #fff !important;
+            font-weight: 600;
+        }
+        .card-body {
+            border-radius: 0 0 2rem 2rem !important;
+        }
+        .form-control, .form-select {
+            border-radius: 1.5rem;
+            border: 1.5px solid var(--green-light);
+            background: var(--green-pale);
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--green-dark);
+            box-shadow: 0 0 0 0.2rem var(--green-light);
+        }
+        .btn-primary, .btn-success, .btn-danger {
+            border-radius: 2rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 8px rgba(122, 196, 127, 0.10);
+            transition: background 0.2s, box-shadow 0.2s, transform 0.2s, color 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, var(--green-dark) 0%, var(--green-medium) 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(90deg, var(--green-medium) 0%, var(--green-dark) 100%);
+            color: #fff8f0;
+            transform: scale(1.07) rotate(-1deg);
+            box-shadow: 0 6px 24px var(--green-light);
+        }
+        .btn-success {
+            background: linear-gradient(90deg, var(--green-light) 0%, var(--green-pale) 100%);
+            border: none;
+            color: #4e6e4e;
+        }
+        .btn-success:hover {
+            background: linear-gradient(90deg, var(--green-pale) 0%, var(--green-light) 100%);
+            color: #4e6e4e;
+            transform: scale(1.07) rotate(1deg);
+            box-shadow: 0 6px 24px var(--green-medium);
+        }
+        .btn-danger {
+            background: linear-gradient(90deg, #e57373 0%, #ffc3a0 100%);
+            border: none;
+        }
+        .btn-danger:hover {
+            background: linear-gradient(90deg, #ffc3a0 0%, #e57373 100%);
+            color: #fff8f0;
+            transform: scale(1.07) rotate(-2deg);
+            box-shadow: 0 6px 24px #e57373;
+        }
+        .alert-info {
+            background: linear-gradient(90deg, var(--green-very-pale) 0%, var(--green-pale) 100%);
+            color: #4e6e4e;
+            border: none;
+            border-radius: 1.5rem;
+        }
+        table.table {
+            border-radius: 1.5rem;
+            overflow: hidden;
+        }
+        th, td {
+            border-radius: 1rem !important;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="/">2D Classifier</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('main.classify') }}">Classify</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('main.history') }}">History</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('user.profile') }}">Profile</a></li>
+                {% if current_user.is_admin() %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('main.admin_dashboard') }}">Admin</a></li>
+                {% endif %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                {% else %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Register</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-info mt-3">
+          {% for message in messages %}
+            <div>{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

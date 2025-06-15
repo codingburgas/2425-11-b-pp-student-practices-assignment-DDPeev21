@@ -1,0 +1,56 @@
+{% extends 'bootstrap/base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Admin Dashboard</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">All Users</div>
+                <div class="card-body">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr><th>#</th><th>Username</th><th>Email</th><th>Confirmed</th><th>Role</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ 'Yes' if user.confirmed else 'No' }}</td>
+                                <td>{{ user.role.name if user.role else 'user' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">All Classified Points</div>
+                <div class="card-body">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr><th>#</th><th>User</th><th>X</th><th>Y</th><th>Result</th><th>Timestamp</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for point in points %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ point.user_id }}</td>
+                                <td>{{ point.x }}</td>
+                                <td>{{ point.y }}</td>
+                                <td>{{ point.result }}</td>
+                                <td>{{ point.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
