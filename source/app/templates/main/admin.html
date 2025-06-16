@@ -1,5 +1,30 @@
 {% extends 'bootstrap/base.html' %}
 {% block title %}Admin Dashboard{% endblock %}
+{% block styles %}
+{{ super() }}
+<style>
+    .btn-hover-grow {
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn-hover-grow:hover {
+        transform: scale(1.1) translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .btn-primary.btn-hover-grow:hover {
+        box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+    }
+    .btn-danger.btn-hover-grow:hover {
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
+    .chart-container {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="container mt-5">
     <h2 class="mb-4">Admin Dashboard</h2>
@@ -8,46 +33,82 @@
             <div class="card mb-4">
                 <div class="card-header bg-dark text-white">All Users</div>
                 <div class="card-body">
-                    <table class="table table-sm table-hover">
-                        <thead>
-                            <tr><th>#</th><th>Username</th><th>Email</th><th>Confirmed</th><th>Role</th></tr>
-                        </thead>
-                        <tbody>
-                        {% for user in users %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td>{{ user.username }}</td>
-                                <td>{{ user.email }}</td>
-                                <td>{{ 'Yes' if user.confirmed else 'No' }}</td>
-                                <td>{{ user.role.name if user.role else 'user' }}</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 20%">Username</th>
+                                    <th style="width: 25%">Email</th>
+                                    <th style="width: 10%">Confirmed</th>
+                                    <th style="width: 10%">Role</th>
+                                    <th style="width: 30%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for user in users %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ 'Yes' if user.confirmed else 'No' }}</td>
+                                    <td>{{ user.role.name if user.role else 'user' }}</td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{{ url_for('main.edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary py-0 px-2 btn-hover-grow">Edit</a>
+                                            {% if user.id != current_user.id %}
+                                            <form action="{{ url_for('main.delete_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-danger py-0 px-2 btn-hover-grow" onclick="return confirm('Are you sure you want to delete this user?')">Delete</button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card mb-4">
+                <div class="card-header bg-info text-white">Classification Statistics</div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <img src="data:image/png;base64,{{ chart_image }}" class="img-fluid" alt="Classification Results Chart">
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-4">
                 <div class="card-header bg-info text-white">All Classified Points</div>
                 <div class="card-body">
-                    <table class="table table-sm table-hover">
-                        <thead>
-                            <tr><th>#</th><th>User</th><th>X</th><th>Y</th><th>Result</th><th>Timestamp</th></tr>
-                        </thead>
-                        <tbody>
-                        {% for point in points %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td>{{ point.user_id }}</td>
-                                <td>{{ point.x }}</td>
-                                <td>{{ point.y }}</td>
-                                <td>{{ point.result }}</td>
-                                <td>{{ point.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 15%">User</th>
+                                    <th style="width: 15%">X</th>
+                                    <th style="width: 15%">Y</th>
+                                    <th style="width: 15%">Result</th>
+                                    <th style="width: 35%">Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for point in points %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ point.user_id }}</td>
+                                    <td>{{ point.x }}</td>
+                                    <td>{{ point.y }}</td>
+                                    <td>{{ point.result }}</td>
+                                    <td>{{ point.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

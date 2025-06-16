@@ -26,4 +26,11 @@ class PointForm(FlaskForm):
 class EditProfileForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(1, 64)])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    submit = SubmitField('Update Profile') 
+    submit = SubmitField('Update Profile')
+
+class AdminUserEditForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(1, 64)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    role = SelectField('Role', choices=[('user', 'User'), ('admin', 'Admin')], validators=[DataRequired()])
+    confirmed = BooleanField('Confirmed')
+    submit = SubmitField('Update User') 

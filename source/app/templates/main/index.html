@@ -1,15 +1,140 @@
 {% extends 'bootstrap/base.html' %}
 {% block title %}Dashboard{% endblock %}
+{% block styles %}
+{{ super() }}
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        margin-bottom: 1.5rem;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header {
+        background: var(--green-medium);
+        color: white;
+        padding: 1rem;
+        border-bottom: none;
+        border-radius: 10px 10px 0 0;
+    }
+    
+    .chart-container {
+        padding: 1.5rem;
+        background: white;
+    }
+    
+    .welcome-section {
+        background: var(--green-medium);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .quick-actions .btn {
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .quick-actions .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .quick-actions .btn-primary {
+        background: var(--green-medium);
+    }
+    
+    .quick-actions .btn-primary:hover {
+        background: var(--green-dark);
+    }
+    
+    .quick-actions .btn-info {
+        background: var(--green-light);
+        color: var(--green-dark);
+    }
+    
+    .quick-actions .btn-info:hover {
+        background: var(--green-medium);
+        color: white;
+    }
+    
+    .quick-actions .btn-success {
+        background: var(--green-dark);
+    }
+    
+    .quick-actions .btn-success:hover {
+        background: var(--green-medium);
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">Welcome, {{ current_user.username }}!</div>
-                <div class="card-body">
-                    <h4 class="card-title">2D Perceptron Classifier</h4>
-                    <p class="card-text">Use the navigation to classify points, view your results, and manage your profile.</p>
-                    <a href="#" class="btn btn-success">Classify a Point</a>
+    <div class="welcome-section">
+        <h2 class="mb-2">Welcome, {{ current_user.username }}!</h2>
+        <p class="mb-0 opacity-75">Explore your classification statistics and start classifying new points.</p>
+    </div>
+    
+    <div class="row">
+        {% if is_admin %}
+        <div class="col-md-6">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h4 class="mb-0">Overall Statistics</h4>
+                </div>
+                <div class="chart-container">
+                    <img src="data:image/png;base64,{{ all_chart_image }}" class="img-fluid" alt="Overall Classification Results">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="col-md-{% if is_admin %}6{% else %}12{% endif %}">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h4 class="mb-0">Your Statistics</h4>
+                </div>
+                <div class="chart-container">
+                    <img src="data:image/png;base64,{{ user_chart_image }}" class="img-fluid" alt="Your Classification Results">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h4 class="mb-0">Quick Actions</h4>
+                </div>
+                <div class="card-body quick-actions">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{{ url_for('main.classify') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-plus-circle me-2"></i>New Classification
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('main.history') }}" class="btn btn-info w-100">
+                                <i class="fas fa-history me-2"></i>View History
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('user.profile') }}" class="btn btn-success w-100">
+                                <i class="fas fa-user me-2"></i>Profile
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

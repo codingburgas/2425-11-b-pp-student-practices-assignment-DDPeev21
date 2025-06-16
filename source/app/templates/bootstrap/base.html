@@ -119,6 +119,30 @@
         th, td {
             border-radius: 1rem !important;
         }
+        .nav-link {
+            position: relative;
+            color: rgba(255, 255, 255, 0.8) !important;
+            text-decoration: none;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: #fff;
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: #fff !important;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
