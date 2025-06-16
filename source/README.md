@@ -13,6 +13,16 @@ A modern Flask web app for classifying 2D points using a perceptron. Includes us
 - Custom error pages (404, 500)
 - Responsive, beautiful Bootstrap interface
 
+## Documentation Requirements (Изисквания за документацията)
+- README.md файл с описание на проекта, инструкции за инсталация и стартиране
+- Документиране чрез docstring и коментари в кода
+- Приложена е схема на базата данни (ERD диаграма)
+- Обяснена е интеграцията между AI модула и уеб приложението
+- Изготвени са минимум 10 user stories по Agile методология
+- Водени са sprint логове (седмично)
+- Използвана е система за управление на задачи (Trello, GitHub Projects) със скрийншоти
+- Изготвен е краен PDF отчет с описание на постигнатото, резултатите и разпределението на задачите
+
 ## Setup Instructions
 1. **Clone the repository**
 2. **Install dependencies**
@@ -39,6 +49,18 @@ A modern Flask web app for classifying 2D points using a perceptron. Includes us
 - Log in to access the dashboard.
 - Classify points and view your history and visualizations.
 - Admins can access the admin dashboard to manage users and view all data.
+
+## AI Module Integration
+The AI module is implemented in `app/ai/perceptron.py` as a Perceptron class. When a user submits a point for classification, the web app:
+1. Saves the point to the database.
+2. Fetches all user points.
+3. Trains the Perceptron on the user's data.
+4. Predicts the class for the new point.
+5. Updates the result in the database and visualizes the outcome.
+
+## Generating Diagrams
+- ERD, Sequence, and UML diagrams are provided in the `final_report.md` and as image files for the PDF export.
+- You can use tools like [dbdiagram.io](https://dbdiagram.io), [draw.io](https://draw.io), or [Mermaid Live Editor](https://mermaid.live) to generate and export diagrams as PNG.
 
 ## Project Structure
 ```
