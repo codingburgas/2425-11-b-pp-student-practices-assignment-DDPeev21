@@ -1,84 +1,67 @@
 # Main blueprint routes will go here 
-from flask import render_template, send_file
+from flask import render_template, send_file, make_response
 from flask_login import login_required, current_user
 from flask import Blueprint, redirect, url_for
 from app.forms import PointForm, AdminUserEditForm
 from app.ai.perceptron import Perceptron
-from app.models import ClassifiedPoint, db, User, Role
+from app.models import ClassifiedPoint, db, User
 from flask import request, flash, abort
 import numpy as np
 import io
 import matplotlib.pyplot as plt
 import base64
-from collections import Counter
-from sqlalchemy import func
+import csv
+from datetime import datetime
 
 main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
     if current_user.is_authenticated:
-        # Get points for the current user
+        plt.style.use('ggplot')
+        # User chart
         user_points = ClassifiedPoint.query.filter_by(user_id=current_user.id).all()
-        
-        # Prepare data for user's pie chart
-        user_results = [point.result for point in user_points]
-        user_result_counts = Counter(user_results)
-        
-        # Create user's pie chart with enhanced styling
-        plt.figure(figsize=(8, 6))
-        plt.pie(user_result_counts.values(), 
-                labels=user_result_counts.keys(), 
-                autopct='%1.1f%%',
-                colors=['#2ecc71', '#27ae60', '#1abc9c', '#16a085'],  # Green palette
-                shadow=True,
-                startangle=90)
-        plt.title('Your Classification Results', pad=20, fontsize=14, fontweight='bold')
-        plt.axis('equal')
-        
-        # Save user's plot
-        buf_user = io.BytesIO()
-        plt.savefig(buf_user, format='png', bbox_inches='tight', dpi=300, facecolor='white')
-        buf_user.seek(0)
-        plt.close()
-        
-        # Convert to base64
-        user_chart_image = base64.b64encode(buf_user.getvalue()).decode('utf-8')
-        
-        # If user is admin, also prepare overall statistics
-        if current_user.is_admin():
+        user_chart_image = None
+        if user_points:
+            xs = [p.x for p in user_points]
+            ys = [p.y for p in user_points]
+            results = [p.result for p in user_points]
+            fig, ax = plt.subplots(figsize=(4,4))
+            ax.scatter(xs, ys, c=results, cmap='coolwarm', s=80, edgecolor='black')
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_title('Your Points')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            fig.subplots_adjust(left=0.18, right=0.98, top=0.88, bottom=0.18)
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight', transparent=True)
+            buf.seek(0)
+            user_chart_image = base64.b64encode(buf.getvalue()).decode('utf-8')
+            plt.close(fig)
+        # Admin: all users chart
+        is_admin = current_user.is_admin() if hasattr(current_user, 'is_admin') else False
+        all_chart_image = None
+        if is_admin:
             all_points = ClassifiedPoint.query.all()
-            all_results = [point.result for point in all_points]
-            all_result_counts = Counter(all_results)
-            
-            # Create overall pie chart with enhanced styling
-            plt.figure(figsize=(8, 6))
-            plt.pie(all_result_counts.values(), 
-                    labels=all_result_counts.keys(), 
-                    autopct='%1.1f%%',
-                    colors=['#2ecc71', '#27ae60', '#1abc9c', '#16a085'],  # Green palette
-                    shadow=True,
-                    startangle=90)
-            plt.title('Overall Classification Results', pad=20, fontsize=14, fontweight='bold')
-            plt.axis('equal')
-            
-            # Save overall plot
-            buf_all = io.BytesIO()
-            plt.savefig(buf_all, format='png', bbox_inches='tight', dpi=300, facecolor='white')
-            buf_all.seek(0)
-            plt.close()
-            
-            # Convert to base64
-            all_chart_image = base64.b64encode(buf_all.getvalue()).decode('utf-8')
-            
-            return render_template('main/index.html', 
-                                user_chart_image=user_chart_image,
-                                all_chart_image=all_chart_image,
-                                is_admin=True)
-        
-        return render_template('main/index.html', 
-                            user_chart_image=user_chart_image,
-                            is_admin=False)
+            if all_points:
+                xs = [p.x for p in all_points]
+                ys = [p.y for p in all_points]
+                results = [p.result for p in all_points]
+                fig, ax = plt.subplots(figsize=(4,4))
+                ax.scatter(xs, ys, c=results, cmap='coolwarm', s=80, edgecolor='black')
+                ax.set_xlabel('X')
+                ax.set_ylabel('Y')
+                ax.set_title('All Users Points')
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                fig.subplots_adjust(left=0.18, right=0.98, top=0.88, bottom=0.18)
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png', bbox_inches='tight', transparent=True)
+                buf.seek(0)
+                all_chart_image = base64.b64encode(buf.getvalue()).decode('utf-8')
+                plt.close(fig)
+        return render_template('main/index.html', user_chart_image=user_chart_image, all_chart_image=all_chart_image, is_admin=is_admin)
     return redirect(url_for('auth.login'))
 
 @main.route('/classify', methods=['GET', 'POST'])
@@ -134,25 +117,25 @@ def classify():
 @login_required
 def history():
     points = ClassifiedPoint.query.filter_by(user_id=current_user.id).order_by(ClassifiedPoint.timestamp.desc()).all()
-    
-    # Prepare data for pie chart
-    results = [point.result for point in points]
-    result_counts = Counter(results)
-    
-    # Create pie chart
-    plt.figure(figsize=(6, 4))
-    plt.pie(result_counts.values(), labels=result_counts.keys(), autopct='%1.1f%%')
-    plt.title('Your Classification Results')
-    
-    # Save plot to a bytes buffer
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight')
-    buf.seek(0)
-    plt.close()
-    
-    # Convert to base64 for embedding in HTML
-    chart_image = base64.b64encode(buf.getvalue()).decode('utf-8')
-    
+    chart_image = None
+    if points:
+        plt.style.use('ggplot')
+        xs = [p.x for p in points]
+        ys = [p.y for p in points]
+        results = [p.result for p in points]
+        fig, ax = plt.subplots(figsize=(4,4))
+        ax.scatter(xs, ys, c=results, cmap='coolwarm', s=80, edgecolor='black')
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_title('Your Classification Results Chart')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        fig.subplots_adjust(left=0.18, right=0.98, top=0.88, bottom=0.18)
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', transparent=True)
+        buf.seek(0)
+        chart_image = base64.b64encode(buf.getvalue()).decode('utf-8')
+        plt.close(fig)
     return render_template('main/history.html', points=points, chart_image=chart_image)
 
 @main.route('/admin')
@@ -160,30 +143,94 @@ def history():
 def admin_dashboard():
     if not current_user.is_admin():
         abort(403)
+    plt.style.use('ggplot')
     users = User.query.all()
     points = ClassifiedPoint.query.order_by(ClassifiedPoint.timestamp.desc()).all()
-    
-    # Prepare data for pie chart
-    results = [point.result for point in points]
-    result_counts = Counter(results)
-    
-    # Create pie chart
-    plt.figure(figsize=(6, 4))
-    plt.pie(result_counts.values(), labels=result_counts.keys(), autopct='%1.1f%%')
-    plt.title('Overall Classification Results')
-    
-    # Save plot to a bytes buffer
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight')
-    buf.seek(0)
-    plt.close()
-    
-    # Convert to base64 for embedding in HTML
-    chart_image = base64.b64encode(buf.getvalue()).decode('utf-8')
-    
+    # Generate chart for all points
+    chart_image = None
+    if points:
+        xs = [p.x for p in points]
+        ys = [p.y for p in points]
+        results = [p.result for p in points]
+        fig, ax = plt.subplots(figsize=(4,4))
+        ax.scatter(xs, ys, c=results, cmap='coolwarm', s=80, edgecolor='black')
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_title('All Classified Points')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        fig.subplots_adjust(left=0.18, right=0.98, top=0.88, bottom=0.18)
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', transparent=True)
+        buf.seek(0)
+        chart_image = base64.b64encode(buf.getvalue()).decode('utf-8')
+        plt.close(fig)
     return render_template('main/admin.html', users=users, points=points, chart_image=chart_image)
 
-@main.route('/admin/user/<int:user_id>/edit', methods=['GET', 'POST'])
+@main.route('/export-data')
+@login_required
+def export_data():
+    # Get points for the current user
+    points = ClassifiedPoint.query.filter_by(user_id=current_user.id).order_by(ClassifiedPoint.timestamp.desc()).all()
+    
+    # Create CSV in memory
+    si = io.StringIO()
+    cw = csv.writer(si)
+    
+    # Write header
+    cw.writerow(['Timestamp', 'X', 'Y', 'Label', 'Result'])
+    
+    # Write data
+    for point in points:
+        cw.writerow([
+            point.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            point.x,
+            point.y,
+            point.label,
+            point.result
+        ])
+    
+    # Create the response
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = f"attachment; filename=user_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
+
+@main.route('/admin/export-data/<int:user_id>')
+@login_required
+def admin_export_data(user_id):
+    if not current_user.is_admin():
+        abort(403)
+    
+    # Get user data
+    user = User.query.get_or_404(user_id)
+    points = ClassifiedPoint.query.filter_by(user_id=user_id).order_by(ClassifiedPoint.timestamp.desc()).all()
+    
+    # Create CSV in memory
+    si = io.StringIO()
+    cw = csv.writer(si)
+    
+    # Write header
+    cw.writerow(['Username', 'Timestamp', 'X', 'Y', 'Label', 'Result'])
+    
+    # Write data
+    for point in points:
+        cw.writerow([
+            user.username,
+            point.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            point.x,
+            point.y,
+            point.label,
+            point.result
+        ])
+    
+    # Create the response
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = f"attachment; filename=user_{user.username}_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
+
+@main.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def edit_user(user_id):
     if not current_user.is_admin():
@@ -193,25 +240,23 @@ def edit_user(user_id):
     if form.validate_on_submit():
         user.username = form.username.data
         user.email = form.email.data
+        user.role = form.role.data
         user.confirmed = form.confirmed.data
-        role = Role.query.filter_by(name=form.role.data).first()
-        if role:
-            user.role = role
         db.session.commit()
-        flash('User updated successfully!')
+        flash('User updated successfully!', 'success')
         return redirect(url_for('main.admin_dashboard'))
     return render_template('main/edit_user.html', form=form, user=user)
 
-@main.route('/admin/user/<int:user_id>/delete', methods=['POST'])
+@main.route('/delete_user/<int:user_id>', methods=['POST'])
 @login_required
 def delete_user(user_id):
     if not current_user.is_admin():
         abort(403)
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
-        flash('You cannot delete your own account!', 'danger')
+        flash('You cannot delete your own account.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
     db.session.delete(user)
     db.session.commit()
-    flash('User deleted successfully!')
+    flash('User deleted successfully!', 'success')
     return redirect(url_for('main.admin_dashboard')) 

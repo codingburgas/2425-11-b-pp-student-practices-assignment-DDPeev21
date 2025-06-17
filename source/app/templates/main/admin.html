@@ -23,11 +23,32 @@
         padding: 15px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    .export-btn {
+        background: linear-gradient(90deg, var(--green-dark) 0%, var(--green-medium) 100%);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(122, 196, 127, 0.10);
+    }
+    .export-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(122, 196, 127, 0.20);
+        background: linear-gradient(90deg, var(--green-medium) 0%, var(--green-dark) 100%);
+    }
 </style>
 {% endblock %}
 {% block content %}
 <div class="container mt-5">
-    <h2 class="mb-4">Admin Dashboard</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Admin Dashboard</h2>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('main.export_data') }}" class="export-btn">
+                <i class="fas fa-download me-2"></i>Export My Data
+            </a>
+        </div>
+    </div>
     <div class="row">
         <div class="col-md-6">
             <div class="card mb-4">
@@ -56,6 +77,9 @@
                                     <td>
                                         <div class="d-flex gap-1">
                                             <a href="{{ url_for('main.edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary py-0 px-2 btn-hover-grow">Edit</a>
+                                            <a href="{{ url_for('main.admin_export_data', user_id=user.id) }}" class="btn btn-sm btn-success py-0 px-2 btn-hover-grow">
+                                                <i class="fas fa-download"></i>
+                                            </a>
                                             {% if user.id != current_user.id %}
                                             <form action="{{ url_for('main.delete_user', user_id=user.id) }}" method="POST" class="d-inline">
                                                 <button type="submit" class="btn btn-sm btn-danger py-0 px-2 btn-hover-grow" onclick="return confirm('Are you sure you want to delete this user?')">Delete</button>
