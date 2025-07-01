@@ -1,9 +1,13 @@
+import matplotlib
+matplotlib.use('Agg')
+
 # Main blueprint routes will go here 
 from flask import render_template, send_file, make_response
 from flask_login import login_required, current_user
 from flask import Blueprint, redirect, url_for
 from app.forms import PointForm, AdminUserEditForm
 from app.ai.perceptron import Perceptron
+from app.ai.logistic_regression import LogisticRegressionModel
 from app.models import ClassifiedPoint, db, User
 from flask import request, flash, abort
 import numpy as np
@@ -70,10 +74,13 @@ def classify():
     form = PointForm()
     result = None
     img_data = None
+    model_used = None
+    warning = None
     if form.validate_on_submit():
         x = form.x.data
         y = form.y.data
         label = int(form.label.data)
+        model_used = form.model.data
         # Add the new point with the true label
         point = ClassifiedPoint(user_id=current_user.id, x=x, y=y, label=label, result=-1)
         db.session.add(point)
@@ -84,26 +91,50 @@ def classify():
     if user_points:
         X_train = np.array([[p.x, p.y] for p in user_points])
         y_train = np.array([p.label for p in user_points])
-        perceptron = Perceptron()
-        perceptron.fit(X_train, y_train)
-        # Predict the class for the last input (if any)
-        if form.validate_on_submit():
-            result = perceptron.predict(np.array([x, y]))
-            # Update the result for the last point
-            point.result = result
-            db.session.commit()
         xs = [p.x for p in user_points]
         ys = [p.y for p in user_points]
         results = [p.result for p in user_points]
         plt.figure(figsize=(5,5))
+        if form.model.data == 'logreg':
+            unique_classes = np.unique(y_train)
+            if len(unique_classes) < 2:
+                warning = 'Logistic Regression requires at least 2 different classes in your data.'
+            else:
+                model = LogisticRegressionModel()
+                model.fit(X_train, y_train, feature_names=['x', 'y'])
+                if form.validate_on_submit():
+                    result = int(model.predict(np.array([[x, y]]))[0])
+                    point.result = result
+                    db.session.commit()
+                model_used = 'Logistic Regression'
+                # Decision boundary for logistic regression
+                x_min, x_max = X_train[:,0].min() - 0.5, X_train[:,0].max() + 0.5
+                y_min, y_max = X_train[:,1].min() - 0.5, X_train[:,1].max() + 0.5
+                xx, yy = np.meshgrid(np.linspace(x_min, x_max, 200), np.linspace(y_min, y_max, 200))
+                grid = np.c_[xx.ravel(), yy.ravel()]
+                Z = model.predict(grid)
+                Z = Z.reshape(xx.shape)
+                plt.contourf(xx, yy, Z, alpha=0.2, cmap='coolwarm')
+        else:
+            perceptron = Perceptron()
+            perceptron.fit(X_train, y_train)
+            if form.validate_on_submit():
+                result = perceptron.predict(np.array([x, y]))
+                point.result = result
+                db.session.commit()
+            model_used = 'Perceptron'
+            # Decision boundary for perceptron
+            x_min, x_max = X_train[:,0].min() - 0.5, X_train[:,0].max() + 0.5
+            y_min, y_max = X_train[:,1].min() - 0.5, X_train[:,1].max() + 0.5
+            xx, yy = np.meshgrid(np.linspace(x_min, x_max, 200), np.linspace(y_min, y_max, 200))
+            grid = np.c_[xx.ravel(), yy.ravel()]
+            Z = np.array([perceptron.predict(point) for point in grid])
+            Z = Z.reshape(xx.shape)
+            plt.contourf(xx, yy, Z, alpha=0.2, cmap='coolwarm')
         scatter = plt.scatter(xs, ys, c=results, cmap='coolwarm', s=120, edgecolor='black', label='Your Points')
-        x_vals = np.linspace(min(xs + [0])-0.2, max(xs + [1])+0.2, 100)
-        plt.plot(x_vals, x_vals, 'k--', label='Decision Boundary (y=x)')
-        plt.xlim(min(xs + [0])-0.2, max(xs + [1])+0.2)
-        plt.ylim(min(ys + [0])-0.2, max(ys + [1])+0.2)
         plt.xlabel('X')
         plt.ylabel('Y')
-        plt.title('Your Classified Points')
+        plt.title(f'Your Classified Points ({model_used})')
         plt.legend()
         plt.tight_layout()
         buf = io.BytesIO()
@@ -111,7 +142,7 @@ def classify():
         buf.seek(0)
         img_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('utf-8')
         plt.close()
-    return render_template('main/classify.html', form=form, result=result, img_data=img_data)
+    return render_template('main/classify.html', form=form, result=result, img_data=img_data, model_used=model_used, warning=warning)
 
 @main.route('/history')
 @login_required
@@ -259,4 +290,48 @@ def delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     flash('User deleted successfully!', 'success')
-    return redirect(url_for('main.admin_dashboard')) 
+    return redirect(url_for('main.admin_dashboard'))
+
+@main.route('/logreg_results')
+@login_required
+def logreg_results():
+    # Вземи всички точки на текущия потребител
+    user_points = ClassifiedPoint.query.filter_by(user_id=current_user.id).all()
+    metrics = None
+    info_gain = None
+    feature_names = ['x', 'y']
+    img_data = None
+    if user_points and len(user_points) > 2:
+        X = np.array([[p.x, p.y] for p in user_points])
+        y = np.array([p.label for p in user_points])
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        model = LogisticRegressionModel()
+        model.fit(X_train, y_train, feature_names=feature_names)
+        average = 'binary' if len(np.unique(y)) == 2 else 'macro'
+        metrics = model.evaluate(X_test, y_test, average=average)
+        info_gain = model.get_information_gain()
+        # --- Decision boundary visualization ---
+        import matplotlib.pyplot as plt
+        import io, base64
+        plt.figure(figsize=(5,5))
+        # Scatter user points
+        scatter = plt.scatter(X[:,0], X[:,1], c=y, cmap='coolwarm', s=80, edgecolor='black', label='Points')
+        # Mesh grid
+        x_min, x_max = X[:,0].min() - 0.5, X[:,0].max() + 0.5
+        y_min, y_max = X[:,1].min() - 0.5, X[:,1].max() + 0.5
+        xx, yy = np.meshgrid(np.linspace(x_min, x_max, 200), np.linspace(y_min, y_max, 200))
+        grid = np.c_[xx.ravel(), yy.ravel()]
+        Z = model.predict(grid)
+        Z = Z.reshape(xx.shape)
+        plt.contourf(xx, yy, Z, alpha=0.2, cmap='coolwarm')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title('Logistic Regression Decision Boundary')
+        plt.legend()
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        img_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('utf-8')
+        plt.close()
+    return render_template('main/logreg_results.html', metrics=metrics, info_gain=info_gain, img_data=img_data) 

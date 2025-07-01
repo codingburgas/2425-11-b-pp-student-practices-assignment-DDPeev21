@@ -21,6 +21,7 @@ class PointForm(FlaskForm):
     x = FloatField('X Coordinate', validators=[DataRequired()])
     y = FloatField('Y Coordinate', validators=[DataRequired()])
     label = SelectField('True Label', choices=[('0', 'Class 0'), ('1', 'Class 1')], validators=[DataRequired()])
+    model = SelectField('Model', choices=[('perceptron', 'Perceptron'), ('logreg', 'Logistic Regression')], validators=[DataRequired()])
     submit = SubmitField('Classify Point')
 
 class EditProfileForm(FlaskForm):

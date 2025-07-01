@@ -1,0 +1,43 @@
+{% extends 'bootstrap/base.html' %}
+{% block title %}Logistic Regression Results{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Logistic Regression Results</h2>
+    {% if metrics %}
+        <h4>Metrics</h4>
+        <table class="table table-bordered w-auto">
+            <tr><th>Precision</th><td>{{ metrics.precision|round(4) }}</td></tr>
+            <tr><th>Recall</th><td>{{ metrics.recall|round(4) }}</td></tr>
+            <tr><th>F1-Score</th><td>{{ metrics.f1_score|round(4) }}</td></tr>
+            <tr><th>Accuracy</th><td>{{ metrics.accuracy|round(4) }}</td></tr>
+            <tr><th>Log Loss (Entropy)</th><td>{{ metrics.logloss|round(4) }}</td></tr>
+        </table>
+        <h4>Confusion Matrix</h4>
+        <table class="table table-bordered w-auto">
+            {% for row in metrics.confusion_matrix %}
+                <tr>
+                {% for val in row %}
+                    <td>{{ val }}</td>
+                {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <div class="alert alert-warning">Not enough data to train and evaluate the model.</div>
+    {% endif %}
+    {% if info_gain %}
+        <h4>Feature Importance (Information Gain)</h4>
+        <table class="table table-bordered w-auto">
+            <tr><th>Feature</th><th>Information Gain</th></tr>
+            {% for feature, gain in info_gain.items() %}
+                <tr><td>{{ feature }}</td><td>{{ gain|round(4) }}</td></tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+    {% if img_data %}
+        <h4>Decision Boundary Visualization</h4>
+        <img src="{{ img_data }}" class="img-fluid" alt="Decision Boundary">
+    {% endif %}
+    <a href="{{ url_for('main.index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
+{% endblock %} 
